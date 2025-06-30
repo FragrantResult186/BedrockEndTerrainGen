@@ -31,6 +31,16 @@ public class BedrockEndTerrainGen {
         private void sampleCol(double[] c, int idx, int x, int z, int y) {
             double[] up = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,63./64,62./64,61./64,60./64,59./64,58./64,57./64,56./64,55./64,54./64,53./64,52./64,51./64,50./64,49./64,48./64,47./64,46./64};
             double[] lo = {0,0,1./7,2./7,3./7,4./7,5./7,6./7,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+
+            /* 1.14+ */
+            long rsq = (long)x * x + (long)z * z;
+            if ((int)rsq < 0) {
+                for (int i = 0; i < 2; i++) {
+                    c[idx + i] = Double.NaN; // end_barrens
+                }
+                return;
+            }
+
             double d = endHeight(x, z) - 8;
             for (int i = 0; i < 2; i++) {
                 int yy = y + i;
@@ -216,22 +226,22 @@ public class BedrockEndTerrainGen {
 
     private static double grad(int i, double x, double y, double z) {
         return switch (i & 15) {
-            case 0 -> x + y;
-            case 1 -> -x + y;
-            case 2 -> x - y;
-            case 3 -> -x - y;
-            case 4 -> x + z;
-            case 5 -> -x + z;
-            case 6 -> x - z;
-            case 7 -> -x - z;
-            case 8 -> y + z;
-            case 9 -> -y + z;
-            case 10 -> y - z;
-            case 11 -> -y - z;
-            case 12 -> x + y;
-            case 13 -> -y + z;
-            case 14 -> -x + y;
-            case 15 -> -y - z;
+            case 0  ->  x +y;
+            case 1  -> -x +y;
+            case 2  ->  x -y;
+            case 3  -> -x -y;
+            case 4  ->  x +z;
+            case 5  -> -x +z;
+            case 6  ->  x -z;
+            case 7  -> -x -z;
+            case 8  ->  y +z;
+            case 9  -> -y +z;
+            case 10 ->  y -z;
+            case 11 -> -y -z;
+            case 12 ->  x +y;
+            case 13 -> -y +z;
+            case 14 -> -x +y;
+            case 15 -> -y -z;
             default -> 0;
         };
     }
@@ -246,8 +256,12 @@ public class BedrockEndTerrainGen {
 
     public static int getEndSurfaceHeight(long seed, int x, int z) {
         EndGenerator gen = new EndGenerator(seed);
-        for (int y = 127; y >= 0; y--) {
-            if (gen.getDensity(x, y, z) > 0) return y;
+        for (int y = 80; y >= 0; y--) { // 0-80
+            double density = gen.getDensity(x, y, z);
+            if (Double.isNaN(density)) {
+                return 0; // end_barrens
+            }
+            if (density > 0) return y;
         }
         return 0;
     }
